@@ -1,0 +1,159 @@
+{
+  "name": "Veritaszeph Tree Service AI Agent - Phase 10",
+  "nodes": [
+    {
+      "name": "Job Completed Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        300
+      ],
+      "parameters": {
+        "event": "job_completed"
+      }
+    },
+    {
+      "name": "Log Insurance Event",
+      "type": "custom.dbInsert",
+      "typeVersion": 1,
+      "position": [
+        400,
+        300
+      ],
+      "parameters": {
+        "table": "insurance_logs",
+        "fields": {
+          "jobId": "={{$json[\"jobId\"]}}",
+          "client": "={{$json[\"clientName\"]}}",
+          "location": "={{$json[\"address\"]}}",
+          "date": "={{$now}}",
+          "incidentReport": "None",
+          "certificateAttached": "true"
+        }
+      }
+    },
+    {
+      "name": "Financial Log Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        500
+      ],
+      "parameters": {
+        "event": "financial_entry"
+      }
+    },
+    {
+      "name": "Store Financial Record",
+      "type": "custom.dbInsert",
+      "typeVersion": 1,
+      "position": [
+        400,
+        500
+      ],
+      "parameters": {
+        "table": "finance_ledger",
+        "fields": {
+          "type": "={{$json[\"type\"]}}",
+          "amount": "={{$json[\"amount\"]}}",
+          "date": "={{$json[\"date\"]}}",
+          "description": "={{$json[\"description\"]}}"
+        }
+      }
+    },
+    {
+      "name": "Crew Check-in (Franchise)",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        200,
+        700
+      ],
+      "parameters": {
+        "event": "crew_checkin_franchise"
+      }
+    },
+    {
+      "name": "Log Location",
+      "type": "custom.dbInsert",
+      "typeVersion": 1,
+      "position": [
+        400,
+        700
+      ],
+      "parameters": {
+        "table": "location_ops",
+        "fields": {
+          "location": "={{$json[\"branch\"]}}",
+          "crew": "={{$json[\"crew\"]}}",
+          "jobId": "={{$json[\"jobId\"]}}",
+          "checkInTime": "={{$now}}"
+        }
+      }
+    },
+    {
+      "name": "Weekly Compliance Scan",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        200,
+        900
+      ],
+      "parameters": {
+        "mode": "everyWeek",
+        "dayOfWeek": "monday",
+        "hour": 3
+      }
+    },
+    {
+      "name": "Run Compliance Checklist",
+      "type": "custom.auditScanner",
+      "typeVersion": 1,
+      "position": [
+        400,
+        900
+      ],
+      "parameters": {
+        "tablesToScan": [
+          "insurance_logs",
+          "job_completions",
+          "crew_logs"
+        ],
+        "missingFieldsAlert": "send"
+      }
+    }
+  ],
+  "connections": {
+    "Job Completed Webhook": {
+      "main": [
+        [
+          "Log Insurance Event"
+        ]
+      ]
+    },
+    "Financial Log Webhook": {
+      "main": [
+        [
+          "Store Financial Record"
+        ]
+      ]
+    },
+    "Crew Check-in (Franchise)": {
+      "main": [
+        [
+          "Log Location"
+        ]
+      ]
+    },
+    "Weekly Compliance Scan": {
+      "main": [
+        [
+          "Run Compliance Checklist"
+        ]
+      ]
+    }
+  },
+  "active": false
+}
